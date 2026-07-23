@@ -1,0 +1,126 @@
+### Variáveis
+@baseUrl = http://localhost:8080
+
+### Criar peça
+# @name createPart
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Filtro de Óleo X",
+  "category": "engine",
+  "currentStock": 15,
+  "minimumStock": 20,
+  "averageDailySales": 4,
+  "leadTimeDays": 5,
+  "criticalityLevel": 3,
+  "unitCost": 18.50
+}
+
+> {% client.global.set("partId", response.body.id); %}
+
+### Listar peças
+GET {{baseUrl}}/part
+
+### Atualizar peça (usa o id da peça criada acima)
+PUT {{baseUrl}}/part/{{partId}}
+Content-Type: application/json
+
+{
+  "name": "Filtro de Óleo X",
+  "category": "engine",
+  "currentStock": 50,
+  "minimumStock": 30,
+  "averageDailySales": 4,
+  "leadTimeDays": 5,
+  "criticalityLevel": 3,
+  "unitCost": 18.50
+}
+
+### Remover peça (usa o id da peça criada acima)
+DELETE {{baseUrl}}/part/{{partId}}
+
+### Prioridades de reposição
+GET {{baseUrl}}/restock/priorities
+
+
+### ---------------------------------------------------------------------------
+### Seed: 5 peças para testar a ordenação do /restock/priorities
+### Ordem esperada: Correia Z (250) > Filtro X (75) > Pastilha Y (36, crit 3)
+###                 > Amortecedor A (36) > Amortecedor B (36, desempate alfabético)
+### ---------------------------------------------------------------------------
+
+### Seed 1 - Filtro de Óleo X (urgencyScore = 75)
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Filtro de Óleo X",
+  "category": "engine",
+  "currentStock": 15,
+  "minimumStock": 20,
+  "averageDailySales": 4,
+  "leadTimeDays": 5,
+  "criticalityLevel": 3,
+  "unitCost": 18.50
+}
+
+### Seed 2 - Pastilha de Freio Y (urgencyScore = 36, criticidade 3)
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Pastilha de Freio Y",
+  "category": "brakes",
+  "currentStock": 8,
+  "minimumStock": 10,
+  "averageDailySales": 2,
+  "leadTimeDays": 5,
+  "criticalityLevel": 3,
+  "unitCost": 42.00
+}
+
+### Seed 3 - Correia Dentada Z (urgencyScore = 250, maior prioridade)
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Correia Dentada Z",
+  "category": "engine",
+  "currentStock": 0,
+  "minimumStock": 30,
+  "averageDailySales": 5,
+  "leadTimeDays": 4,
+  "criticalityLevel": 5,
+  "unitCost": 89.90
+}
+
+### Seed 4 - Amortecedor B (urgencyScore = 36, desempate alfabético)
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Amortecedor B",
+  "category": "suspension",
+  "currentStock": 2,
+  "minimumStock": 12,
+  "averageDailySales": 2,
+  "leadTimeDays": 4,
+  "criticalityLevel": 2,
+  "unitCost": 120.00
+}
+
+### Seed 5 - Amortecedor A (urgencyScore = 36, desempate alfabético)
+POST {{baseUrl}}/part
+Content-Type: application/json
+
+{
+  "name": "Amortecedor A",
+  "category": "suspension",
+  "currentStock": 2,
+  "minimumStock": 12,
+  "averageDailySales": 2,
+  "leadTimeDays": 4,
+  "criticalityLevel": 2,
+  "unitCost": 120.00
+}

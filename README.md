@@ -1,180 +1,151 @@
-# 🚚 Desafio Backend – Motor de Priorização de Reposição de Estoque
+# 🚀 Como Rodar o Projeto
 
-## 🧩 Contexto
+## 📋 Pré-requisitos
 
-Somos um distribuidor de autopeças. Diariamente precisamos decidir **quais peças devem ser priorizadas para reposição**, considerando:
+- [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/) (forma recomendada)
+- [Go 1.25+](https://go.dev/dl/) (apenas se for rodar sem Docker)
 
-- Estoque limitado
-- Capital de giro limitado
-- Diferentes níveis de criticidade
-- Padrões de venda distintos
-- Tempo de reposição do fornecedor
+## ⚙️ Configuração
 
-O objetivo é construir um microserviço capaz de:
+O projeto lê as variáveis de ambiente de um arquivo `.env` na raiz. Copie o exemplo:
 
-1. Gerenciar peças em estoque
-2. Calcular automaticamente quais peças devem ser priorizadas para reposição
-3. Ordenar as peças por nível de urgência
-
----
-
-# 🛠️ Requisitos Funcionais
-
-## 1️⃣ CRUD de Peças
-
-Criar uma API para:
-
-- Criar peça
-- Listar peças
-- Atualizar peça
-- Remover peça
-- Buscar por categoria (opcional)
-
-### 📦 Estrutura da Entidade
-
-```json
-{
-  "id": "uuid",
-  "name": "Filtro de Óleo X",
-  "category": "engine",
-  "currentStock": 15,
-  "minimumStock": 20,
-  "averageDailySales": 4,
-  "leadTimeDays": 5,
-  "unitCost": 18.50,
-  "criticalityLevel": 3
-}
+```bash
+cp .env-example .env
 ```
 
-## 📝 Descrição dos Campos
+| Variável | Descrição | Padrão |
+|----------|-----------|--------|
+| `DB_USER` | Usuário do Postgres | `postgres` |
+| `DB_PASSWORD` | Senha do Postgres | `postgres` |
+| `DB_NAME` | Nome do banco | `backend_test` |
+| `DB_HOST` | Host do banco (use `localhost` fora do Docker) | `localhost` |
+| `DB_PORT` | Porta exposta no host | `5434` |
+| `DB_SSLMODE` | Modo SSL da conexão | `disable` |
 
-| Campo | Descrição |
-|--------|------------|
-| `currentStock` | Estoque atual disponível |
-| `minimumStock` | Estoque mínimo desejado |
-| `averageDailySales` | Média de vendas por dia |
-| `leadTimeDays` | Tempo (em dias) que o fornecedor demora para entregar a peça |
-| `unitCost` | Custo unitário da peça |
-| `criticalityLevel` | Nível de criticidade (1 a 5) |
+## 🐳 Rodando com Docker (recomendado)
 
----
+Um único comando sobe o banco, aplica as migrations e builda/sobe a API:
 
-## 🧠 Endpoint de Priorização
-
-Criar o endpoint:
-
-```GET /restock/priorities```
-
-Esse endpoint deve retornar as peças ordenadas por prioridade de reposição.
-
----
-
-## 📐 Regras de Negócio
-
-### 1️⃣ Calcular Consumo Esperado Durante o Lead Time
-
-```expectedConsumption = averageDailySales * leadTimeDays```
-
----
-
-### 2️⃣ Calcular Estoque Projetado
-
-```projectedStock = currentStock - expectedConsumption```
-
----
-
-### 3️⃣ Identificar Necessidade de Reposição
-
-Uma peça precisa de reposição quando:
-```projectedStock < minimumStock```
-
-
----
-
-### 4️⃣ Calcular Score de Prioridade
-
-O score de prioridade deve ser calculado da seguinte forma:
-
-```urgencyScore = (minimumStock - projectedStock) * criticalityLevel```
-
-
-Quanto maior o `urgencyScore`, maior a prioridade de reposição.
-
----
-
-## 🟰 Critérios de Desempate
-
-Em caso de empate no `urgencyScore`, aplicar:
-
-1. Maior `criticalityLevel`
-2. Maior `averageDailySales`
-3. Ordem alfabética pelo nome da peça
-
----
-
-## 📤 Exemplo de Resposta
-
-```json
-{
-  "priorities": [
-    {
-      "partId": "uuid-1",
-      "name": "Filtro de Óleo X",
-      "currentStock": 15,
-      "projectedStock": 5,
-      "minimumStock": 20,
-      "urgencyScore": 45
-    },
-    {
-      "partId": "uuid-2",
-      "name": "Pastilha de Freio Y",
-      "currentStock": 8,
-      "projectedStock": -2,
-      "minimumStock": 10,
-      "urgencyScore": 36
-    }
-  ]
-}
+```bash
+docker compose up --build
 ```
 
-### 📌 Regras Gerais
+O Compose orquestra três serviços na ordem correta:
 
-- Não utilizar APIs externas.
-- O sistema deve estar preparado para suportar centenas ou milhares de peças.
-- A solução deve permitir futura troca de banco de dados.
-- O cálculo de prioridade deve estar isolado da camada HTTP.
-- Tratar corretamente casos de estoque negativo.
+1. **`postgres`** — sobe o banco e aguarda ficar saudável (`healthcheck`).
+2. **`migrate`** — aplica as migrations em `./migrations` e encerra.
+3. **`api`** — só inicia após o banco estar saudável e as migrations concluídas.
 
-### 🎯 O Que Será Avaliado
-- 🧠 Modelagem de Domínio
-- Clareza das entidades
-- Separação de responsabilidades
-- Organização das regras de negócio
+A API fica disponível em `http://localhost:8080`.
 
-### 🧪 Testes
-- Testes unitários do cálculo de prioridade
-- Testes de cenários extremos (estoque negativo, venda zero, lead time alto)
+Para parar e remover os containers:
 
-### 🏗️ Arquitetura
-- Uso adequado de camadas (ex: Controller, Service, Domain, Repository)
-- Código limpo e organizado
-- Facilidade de manutenção
+```bash
+docker compose down
+```
 
-### 🧰 Tecnologias
+Para remover também os dados do banco (volume):
 
-Pode ser desenvolvido utilizando:
+```bash
+docker compose down -v
+```
 
-- Node.js (com TypeScript)
-- Golang
-- Frameworks e bibliotecas são livres
+## 💻 Rodando localmente (sem Docker)
 
-### 📄 Entrega
+1. Suba apenas o Postgres via Docker (ou use uma instância própria):
 
-O projeto deve conter:
+   ```bash
+   docker compose up -d postgres migrate
+   ```
 
-- Código-fonte organizado
-- README com instruções para rodar localmente
-- Exemplos de requisição
-- Testes automatizados
+2. Ajuste o `.env` para apontar ao banco local (`DB_HOST=localhost`, `DB_PORT=5434`).
 
-Boa implementação 🚀
+3. Rode a aplicação:
+
+   ```bash
+   go run ./cmd
+   ```
+
+## 🗄️ Migrations
+
+As migrations ficam em `./migrations` no formato do [golang-migrate](https://github.com/golang-migrate/migrate). No fluxo Docker elas são aplicadas automaticamente pelo serviço `migrate`. Para criar uma nova:
+
+```bash
+migrate create -ext sql -dir migrations -seq nome_da_migration
+```
+
+## 🧪 Testes
+
+```bash
+go test ./...
+```
+
+Os testes unitários do cálculo de prioridade (incluindo cenários extremos: estoque negativo, venda zero e lead time alto) estão em `internal/domain/part/part_test.go`.
+
+---
+
+# 📡 Endpoints
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/part` | Cria uma peça |
+| `GET` | `/part` | Lista todas as peças |
+| `PUT` | `/part/{id}` | Atualiza uma peça |
+| `DELETE` | `/part/{id}` | Remove uma peça |
+| `GET` | `/restock/priorities` | Lista as peças ordenadas por prioridade de reposição |
+
+## 📝 Exemplos de Requisição
+
+Exemplos prontos (clicáveis no GoLand/IntelliJ) estão em [`internal/examples/requests.http`](internal/examples/requests.http). Abaixo os equivalentes em `curl`:
+
+**Criar peça:**
+
+```bash
+curl -X POST http://localhost:8080/part \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Filtro de Óleo X",
+    "category": "engine",
+    "currentStock": 15,
+    "minimumStock": 20,
+    "averageDailySales": 4,
+    "leadTimeDays": 5,
+    "criticalityLevel": 3,
+    "unitCost": 18.50
+  }'
+```
+
+**Listar peças:**
+
+```bash
+curl http://localhost:8080/part
+```
+
+**Atualizar peça:**
+
+```bash
+curl -X PUT http://localhost:8080/part/{id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Filtro de Óleo X",
+    "category": "engine",
+    "currentStock": 50,
+    "minimumStock": 30,
+    "averageDailySales": 4,
+    "leadTimeDays": 5,
+    "criticalityLevel": 3,
+    "unitCost": 18.50
+  }'
+```
+
+**Remover peça:**
+
+```bash
+curl -X DELETE http://localhost:8080/part/{id}
+```
+
+**Prioridades de reposição:**
+
+```bash
+curl http://localhost:8080/restock/priorities
+```

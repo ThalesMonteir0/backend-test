@@ -1,6 +1,10 @@
 package postgres
 
-import "database/sql"
+import (
+	"database/sql"
+
+	_ "github.com/lib/pq"
+)
 
 func NewConnection(dbUrl string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dbUrl)

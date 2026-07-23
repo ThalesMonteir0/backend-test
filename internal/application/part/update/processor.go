@@ -2,6 +2,7 @@ package update
 
 import (
 	"context"
+	"go.uber.org/zap"
 
 	"github.com/ThalesMonteir0/backend-test/internal/DTO"
 	domainpart "github.com/ThalesMonteir0/backend-test/internal/domain/part"
@@ -9,13 +10,19 @@ import (
 
 type Processor struct {
 	service service
+	logger  *zap.Logger
 }
 
-func New(service service) *Processor {
-	return &Processor{service: service}
+func New(service service, log *zap.Logger) *Processor {
+	return &Processor{service: service, logger: log}
 }
 
 func (p *Processor) Execute(ctx context.Context, in DTO.Part) (DTO.Part, error) {
+	if ctx.Err() != nil {
+		p.logger.Error("Context error", zap.Error(ctx.Err()))
+		return DTO.Part{}, ctx.Err()
+	}
+
 	updated, err := p.service.UpdatePart(ctx, domainpart.Part{
 		ID:                in.Id,
 		Name:              in.Name,
@@ -28,6 +35,7 @@ func (p *Processor) Execute(ctx context.Context, in DTO.Part) (DTO.Part, error) 
 		UnitCoast:         in.UnitCost,
 	})
 	if err != nil {
+		p.logger.Error("Error updating part", zap.Error(err))
 		return DTO.Part{}, err
 	}
 

@@ -3,6 +3,7 @@ package parts
 import (
 	"context"
 	"encoding/json"
+	"github.com/ThalesMonteir0/backend-test/internal/jsonx"
 	"net/http"
 
 	"github.com/ThalesMonteir0/backend-test/internal/DTO"
@@ -57,7 +58,7 @@ func (c *Controller) CreateParts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, created)
+	jsonx.WriteJSON(w, http.StatusCreated, created)
 }
 
 func (c *Controller) GetParts(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +68,7 @@ func (c *Controller) GetParts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, parts)
+	jsonx.WriteJSON(w, http.StatusOK, parts)
 }
 
 func (c *Controller) UpdateParts(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +85,7 @@ func (c *Controller) UpdateParts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, updated)
+	jsonx.WriteJSON(w, http.StatusOK, updated)
 }
 
 func (c *Controller) DeleteParts(w http.ResponseWriter, r *http.Request) {
@@ -96,10 +97,4 @@ func (c *Controller) DeleteParts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
 }
